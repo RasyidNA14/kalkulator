@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Kalkulator</title>
+  <style>
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+    }
+
+    .kalkulator {
+      width: 240px;
+    }
+
+    .layar {
+      width: 100%;
+      margin-bottom: 8px;
+    }
+
+    #ekspresi {
+      width: 100%;
+      font-size: 13px;
+      text-align: right;
+      padding: 4px;
+      box-sizing: border-box;
+    }
+
+    #hasil {
+      width: 100%;
+      font-size: 28px;
+      text-align: right;
+      padding: 4px;
+      box-sizing: border-box;
+    }
+
+    .tombol-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 4px;
+    }
+
+    button {
+      padding: 12px 0;
+      font-size: 15px;
+      cursor: pointer;
+    }
+
+    .btn-nol {
+      grid-column: span 2;
+    }
+  </style>
+</head>
+<body>
+
+<div class="kalkulator">
+  <div class="layar">
+    <input type="text" id="ekspresi" readonly placeholder=" " />
+    <input type="text" id="hasil" readonly value="0" />
+  </div>
+
+  <div class="tombol-grid">
+    <button onclick="hapusSemua()">AC</button>
+    <button onclick="hapusSatu()">DEL</button>
+    <button onclick="inputOperator('%')">%</button>
+    <button onclick="inputOperator('/')">÷</button>
+
+    <button onclick="inputAngka('7')">7</button>
+    <button onclick="inputAngka('8')">8</button>
+    <button onclick="inputAngka('9')">9</button>
+    <button onclick="inputOperator('*')">×</button>
+
+    <button onclick="inputAngka('4')">4</button>
+    <button onclick="inputAngka('5')">5</button>
+    <button onclick="inputAngka('6')">6</button>
+    <button onclick="inputOperator('-')">−</button>
+
+    <button onclick="inputAngka('1')">1</button>
+    <button onclick="inputAngka('2')">2</button>
+    <button onclick="inputAngka('3')">3</button>
+    <button onclick="inputOperator('+')">+</button>
+
+    <button class="btn-nol" onclick="inputAngka('0')">0</button>
+    <button onclick="inputTitik()">.</button>
+    <button onclick="hitung()">=</button>
+  </div>
+</div>
+
+<script>
+  let ekspresiSaat = '';
+  let hasilSaat    = '0';
+  let sudahHitung  = false;
+
+  const elEkspresi = document.getElementById('ekspresi');
+  const elHasil    = document.getElementById('hasil');
+
+  function tampilkan() {
+    elEkspresi.value = ekspresiSaat;
+    elHasil.value    = hasilSaat;
+  }
+
+  function inputAngka(angka) {
+    if (sudahHitung) {
+      ekspresiSaat = angka;
+      hasilSaat    = angka;
+      sudahHitung  = false;
+    } else {
+      if (hasilSaat === '0' && angka !== '.') {
+        hasilSaat = angka;
+      } else {
+        hasilSaat += angka;
+      }
+      ekspresiSaat += angka;
+    }
+    tampilkan();
+  }
+
+  function inputTitik() {
+    const bagian        = ekspresiSaat.split(/[\+\-\*\/\%]/);
+    const angkaTerakhir = bagian[bagian.length - 1];
+    if (angkaTerakhir.includes('.')) return;
+
+    if (sudahHitung) {
+      ekspresiSaat = '0.';
+      hasilSaat    = '0.';
+      sudahHitung  = false;
+    } else {
+      if (ekspresiSaat === '' || /[\+\-\*\/\%]$/.test(ekspresiSaat)) {
+        hasilSaat    += '0.';
+        ekspresiSaat += '0.';
+      } else {
+        hasilSaat    += '.';
+        ekspresiSaat += '.';
+      }
+    }
+    tampilkan();
+  }
+
+  function inputOperator(op) {
+    sudahHitung = false;
+    if (/[\+\-\*\/\%]$/.test(ekspresiSaat)) {
+      ekspresiSaat = ekspresiSaat.slice(0, -1) + op;
+    } else {
+      ekspresiSaat += op;
+    }
+    const simbolMap = { '*': '×', '/': '÷', '+': '+', '-': '−', '%': '%' };
+    hasilSaat = simbolMap[op] || op;
+    tampilkan();
+  }
+
+  function hitung() {
+    if (ekspresiSaat === '' || /[\+\-\*\/\%]$/.test(ekspresiSaat)) return;
+    try {
+      const expr       = ekspresiSaat;
+      const hasilAngka = new Function('return ' + expr)();
+      hasilSaat        = isFinite(hasilAngka)
+        ? parseFloat(hasilAngka.toFixed(10)).toString()
+        : 'Error';
+      ekspresiSaat = expr + ' =';
+      sudahHitung  = true;
+    } catch (e) {
+      hasilSaat    = 'Error';
+      ekspresiSaat = '';
+    }
+    tampilkan();
+  }
+
+  function hapusSemua() {
+    ekspresiSaat = '';
+    hasilSaat    = '0';
+    sudahHitung  = false;
+    tampilkan();
+  }
+
+  function hapusSatu() {
+    if (sudahHitung) { hapusSemua(); return; }
+    ekspresiSaat = ekspresiSaat.slice(0, -1);
+    hasilSaat    = ekspresiSaat === '' ? '0' : ekspresiSaat;
+    tampilkan();
+  }
+
+  document.addEventListener('keydown', function(e) {
+    const k = e.key;
+    if (k >= '0' && k <= '9')                   inputAngka(k);
+    else if (k === '.')                          inputTitik();
+    else if (['+','-','*','/','%'].includes(k))  inputOperator(k);
+    else if (k === 'Enter' || k === '=')         hitung();
+    else if (k === 'Backspace')                  hapusSatu();
+    else if (k === 'Escape')                     hapusSemua();
+  });
+</script>
+</body>
+</html>
